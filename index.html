@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="mb-4"><i class="fas fa-home text-primary me-2"></i>Equipment Rental Dashboard</h1>
+<p class="lead mb-4">Manage your rental operations efficiently</p>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary h-100 shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x mb-3"></i>
+                <h2 class="display-4">{{ stats.employees }}</h2>
+                <h5>Employees</h5>
+                <a href="{{ url_for('employees') }}" class="btn btn-light mt-2">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success h-100 shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-tractor fa-3x mb-3"></i>
+                <h2 class="display-4">{{ stats.equipment }}</h2>
+                <h5>Equipment</h5>
+                <a href="{{ url_for('equipment') }}" class="btn btn-light mt-2">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info h-100 shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-file-contract fa-3x mb-3"></i>
+                <h2 class="display-4">{{ stats.workorders }}</h2>
+                <h5>Work Orders</h5>
+                <a href="{{ url_for('workorders') }}" class="btn btn-light mt-2">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning h-100 shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                <h2 class="display-4">{{ stats.logsheets }}</h2>
+                <h5>Logsheets</h5>
+                <a href="{{ url_for('logsheets') }}" class="btn btn-light mt-2">Manage</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <a href="{{ url_for('employees') }}" class="btn btn-outline-primary btn-lg w-100 mb-3 p-4 text-start">
+            <i class="fas fa-users fa-2x me-3"></i>Employee Management
+        </a>
+    </div>
+    <div class="col-md-6">
+        <a href="{{ url_for('equipment') }}" class="btn btn-outline-success btn-lg w-100 mb-3 p-4 text-start">
+            <i class="fas fa-tractor fa-2x me-3"></i>Equipment Inventory
+        </a>
+    </div>
+</div>
+{% endblock %}

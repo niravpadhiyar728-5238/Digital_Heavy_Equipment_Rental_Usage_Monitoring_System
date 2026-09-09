@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Equipment{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tractor text-success me-2"></i>Equipment Inventory</h2>
+</div>
+
+<!-- Create Equipment Form -->
+<div class="card shadow mb-5">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Add New Equipment</h5>
+    </div>
+    <div class="card-body p-4">
+        <form method="POST" class="row g-3" oninput="previewUniqueNo()">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Equipment Number</label>
+                <input type="text" name="number" id="number" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Company</label>
+                <input type="text" name="company" id="company" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Year</label>
+                <input type="number" name="year" id="year" min="1900" max="2030" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Capacity (Ton)</label>
+                <input type="number" name="capacityton" id="capacityton" step="0.1" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Unique No (Auto)</label>
+                <input type="text" id="uniquenopreview" class="form-control bg-secondary" readonly>
+                <small class="text-muted">Format: NUMBER+COMPANY+YEARS+CACITY</small>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-plus me-2"></i>Add Equipment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function previewUniqueNo() {
+    const number = document.getElementById('number').value.trim().toUpperCase();
+    const company = document.getElementById('company').value.trim().substring(0,3).toUpperCase();
+    const year = document.getElementById('year').value;
+    const capacity = parseFloat(document.getElementById('capacityton').value);
+    
+    if (number && company && year && !isNaN(capacity)) {
+        const preview = number + company + year + Math.floor(capacity);
+        document.getElementById('uniquenopreview').value = preview;
+        document.getElementById('uniquenopreview').className = 'form-control bg-success text-white fw-bold';
+    }
+}
+</script>
+
+<!-- Equipment Table -->
+<div class="card shadow">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Equipment List ({{ equipment|length }})</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Company</th>
+                        <th>Number</th>
+                        <th>Year</th>
+                        <th>Capacity</th>
+                        <th>Unique No</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for eq in equipment %}
+                    <tr>
+                        <td>{{ eq.id }}</td>
+                        <td><span class="badge bg-primary">{{ eq.company }}</span></td>
+                        <td>{{ eq.number }}</td>
+                        <td>{{ eq.year }}</td>
+                        <td>{{ eq.capacityton }} T</td>
+                        <td><code class="bg-light p-1 rounded">{{ eq.uniqueno }}</code></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

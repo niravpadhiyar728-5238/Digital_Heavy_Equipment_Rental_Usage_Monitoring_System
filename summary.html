@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Summary{% endblock %}
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-chart-bar text-success me-2"></i>System Summary</h2>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Employees</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Name</th><th>Role</th><th>Rate/Hr</th><th>OT Rate</th></tr></thead>
+                        <tbody>
+                            {% for emp in employees[:10] %}
+                            <tr>
+                                <td>{{ emp.name }}</td>
+                                <td><span class="badge bg-secondary">{{ emp.role }}</span></td>
+                                <td>₹{{ "%.2f"|format(emp.salaryperhour or 0) }}</td>
+                                <td>₹{{ "%.2f"|format(emp.overtimerateperhour or 0) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-tractor me-2"></i>Equipment</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Company</th><th>Number</th><th>Capacity</th><th>Unique No</th></tr></thead>
+                        <tbody>
+                            {% for eq in equipment[:10] %}
+                            <tr>
+                                <td>{{ eq.company }}</td>
+                                <td>{{ eq.number }}</td>
+                                <td>{{ eq.capacityton }}T</td>
+                                <td><code>{{ eq.uniqueno }}</code></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>Recent Work Orders</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>WO#</th><th>Company</th><th>Total ₹</th></tr></thead>
+                        <tbody>
+                            {% for wo in workorders[-5:] %}
+                            <tr>
+                                <td>{{ wo.wonumber }}</td>
+                                <td>{{ wo.companyname[:15] }}</td>
+                                <td>₹{{ "%.0f"|format(wo.totalamount or 0) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Recent Logsheets</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Log#</th><th>Date</th><th>WO</th><th>Hours</th><th>Diesel</th></tr></thead>
+                        <tbody>
+                            {% for ls in logsheets[-10:] %}
+                            <tr>
+                                <td>{{ ls.lognumber }}</td>
+                                <td>{{ ls.date.strftime('%d/%m') }}</td>
+                                <td>{{ ls.workorder.wonumber if ls.workorder else '-' }}</td>
+                                <td>{{ "%.1f"|format(ls.diffhourmeter or 0) }}</td>
+                                <td>{{ "%.1f"|format(ls.diesel or 0) }}L</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center mt-5">
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg me-2">← Dashboard</a>
+    <a href="{{ url_for('workorders') }}" class="btn btn-success btn-lg">New Work Order</a>
+</div>
+{% endblock %}

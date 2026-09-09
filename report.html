@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Report - {{ workorder.wonumber }}{% endblock %}
+{% block content %}
+<style>
+.table-report { font-size: 13px; }
+.table-report th { background: #e9ecef !important; font-weight: 600; }
+.total-row { font-weight: bold; background: #d4edda !important; }
+</style>
+
+<div class="container-fluid">
+    <h3 class="text-center mb-4">
+        <i class="fas fa-file-invoice text-info me-2"></i>Work Order Report
+    </h3>
+
+    <!-- Work Order Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <table class="table table-borderless">
+                <tr><td><strong>Company:</strong></td><td>{{ workorder.companyname }}</td></tr>
+                <tr><td><strong>Equipment:</strong></td><td>{{ equipment.uniqueno if equipment else 'N/A' }}</td></tr>
+                <tr><td><strong>Site Address:</strong></td><td>{{ workorder.siteaddress or 'N/A' }}</td></tr>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <table class="table table-borderless">
+                <tr><td><strong>WO Number:</strong></td><td>{{ workorder.wonumber }}</td></tr>
+                <tr><td><strong>Period:</strong></td><td>{{ workorder.startdate.strftime('%d/%m/%Y') }} to {{ workorder.enddate.strftime('%d/%m/%Y') }} ({{ workorder.perioddays }} days)</td></tr>
+                <tr><td><strong>Rate:</strong></td><td>₹{{ "%.2f"|format(workorder.rateperhour) }} {{ workorder.ratetype }}</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Daily Log Details -->
+    <h5 class="mb-3">Daily Logsheets ({{ logs|length }})</h5>
+    <div class="table-responsive mb-4">
+        <table class="table table-report table-bordered">
+            <thead>
+                <tr>
+                    <th>Log #</th><th>Date</th><th>Shift</th><th>Hr Meter</th><th>Operator</th>
+                    <th>Diesel</th><th>Breakdown</th><th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td><span class="badge bg-info">{{ log.lognumber }}</span></td>
+                    <td>{{ log.date.strftime('%d/%m') }}</td>
+                    <td>{{ log.shiftstart }} - {{ log.shiftend }}<br><small>Total: {{ log.totalshifttime }}</small></td>
+                    <td>{{ "%.1f"|format(log.hourmeterstart or 0) }} → {{ "%.1f"|format(log.hourmeterend or 0) }}<br><small>Diff: {{ "%.1f"|format(log.diffhourmeter or 0) }} hrs</small></td>
+                    <td>{{ log.empoperatorname or '-' }}<br><small>{{ log.empoperatornumber }}</small></td>
+                    <td>{{ "%.1f"|format(log.diesel or 0) }} L</td>
+                    <td>{{ log.breakdown or '-' }}</td>
+                    <td>{{ log.remarks or '-' }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="3"><strong>TOTALS</strong></td>
+                    <td><strong>{{ "%.1f"|format(totals.hourmeter) }} hrs</strong></td>
+                    <td>-</td>
+                    <td><strong>{{ "%.1f"|format(totals.diesel) }} L</strong></td>
+                    <td colspan="2"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Billing Summary -->
+    <h5>Billing Summary</h5>
+    <div class="row">
+        <div class="col-md-6">
+            <table class="table table-bordered">
+                <tr><th>Hire Charges</th><th>Unit</th><th>Rate</th><th>Amount</th></tr>
+                <tr>
+                    <td>Equipment Hire</td>
+                    <td>{{ "%.1f"|format(totals.hourmeter) }} hrs</td>
+                    <td>₹{{ "%.2f"|format(workorder.rateperhour) }}</td>
+                    <td>₹{{ "%.0f"|format((totals.hourmeter or 0) * (workorder.rateperhour or 0)) }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td><strong>Total Hire</strong></td><td colspan="2"></td>
+                    <td><strong>₹{{ "%.0f"|format((totals.hourmeter or 0) * (workorder.rateperhour or 0)) }}</strong></td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <table class="table table-bordered">
+                <tr><th>Description</th><th>Unit</th><th>Rate</th><th>Amount</th></tr>
+                <tr>
+                    <td>Overtime</td>
+                    <td>{{ "%.1f"|format(totals.othours) }} hrs</td>
+                    <td>₹250</td>
+                    <td>₹{{ "%.0f"|format((totals.othours or 0) * 250) }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td><strong>GRAND TOTAL</strong></td><td colspan="2"></td>
+                    <td><strong>₹{{ "%.0f"|format(((totals.hourmeter or 0) * (workorder.rateperhour or 0)) + ((totals.othours or 0) * 250)) }}</strong></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h6>CGST 9%</h6>
+                    <strong>₹{{ "%.0f"|format((((totals.hourmeter or 0) * (workorder.rateperhour or 0)) + ((totals.othours or 0) * 250)) * 0.09) }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h6>SGST 9%</h6>
+                    <strong>₹{{ "%.0f"|format((((totals.hourmeter or 0) * (workorder.rateperhour or 0)) + ((totals.othours or 0) * 250)) * 0.09) }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold">FINAL TOTAL<br>₹{{ "%.0f"|format((((totals.hourmeter or 0) * (workorder.rateperhour or 0)) + ((totals.othours or 0) * 250)) * 1.18) }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('workorders') }}" class="btn btn-secondary me-2">← Back to Work Orders</a>
+        <button onclick="window.print()" class="btn btn-primary me-2">Print Report</button>
+        <a href="{{ url_for('workorders') }}" class="btn btn-success">New Work Order</a>
+    </div>
+</div>
+
+<script>
+function timeToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Logsheets{% endblock %}
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-clipboard-list text-warning me-2"></i>Logsheet Entry</h2>
+
+<!-- Logsheet Form -->
+<div class="card shadow mb-5">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="fas fa-plus me-2"></i>New Logsheet Entry</h5>
+    </div>
+    <div class="card-body p-4">
+        <form method="POST" class="row g-3" oninput="calculateShift()">
+            <!-- Basic Info Row -->
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Log Number</label>
+                <input type="text" name="lognumber" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Date</label>
+                <input type="date" name="date" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Work Order</label>
+                <select name="woid" class="form-select">
+                    <option value="">-- Select WO --</option>
+                    {% for wo in workorders %}
+                    <option value="{{ wo.id }}">{{ wo.wonumber }} - {{ wo.companyname[:20] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Shift Times Row -->
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Shift Start</label>
+                <input type="time" name="shiftstart" id="shiftstart" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Shift End</label>
+                <input type="time" name="shiftend" id="shiftend" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Lunch (min)</label>
+                <input type="number" name="lunchminutes" id="lunchminutes" value="60" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Total Shift</label>
+                <input type="text" id="totalshifttime" class="form-control bg-success text-white fw-bold" readonly>
+            </div>
+            
+            <!-- Hour Meter Row -->
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Hour Meter Start</label>
+                <input type="number" name="hourmeterstart" id="hourmeterstart" step="0.1" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Hour Meter End</label>
+                <input type="number" name="hourmeterend" id="hourmeterend" step="0.1" class="form-control" onchange="calcHourMeter()">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Diff Hours</label>
+                <input type="number" id="diffhourmeter" class="form-control bg-info text-white fw-bold" readonly>
+            </div>
+            
+            <!-- Operator Search -->
+            <div class="col-12">
+                <label class="form-label fw-bold">Operator <i class="fas fa-search text-primary"></i></label>
+                <div class="input-group">
+                    <input type="text" id="operatorsearch" class="form-control" placeholder="Type operator name or number">
+                    <button class="btn btn-outline-secondary" type="button" onclick="clearOperatorSearch()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="operatorresults" class="border rounded p-2 bg-light mt-2" style="max-height: 150px; overflow-y: auto; display: none;"></div>
+                <input type="hidden" name="empoperatorid" id="empoperatorid">
+                <input type="hidden" name="empoperatornumber" id="empoperatornumber">
+                <input type="hidden" name="empoperatorname" id="empoperatorname">
+                <input type="hidden" name="emprate" id="emprate">
+            </div>
+            
+            <!-- Selected Operator Display -->
+            <div class="col-12" id="selectedoperator" style="display: none;">
+                <div class="alert alert-info">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong id="selectedname"></strong> 
+                    <span id="selectednumber" class="badge bg-secondary ms-2"></span>
+                    Rate: <span id="selectedrate"></span>/hr
+                    <button class="btn btn-sm btn-outline-danger ms-auto" type="button" onclick="clearOperatorSearch()">Change</button>
+                </div>
+            </div>
+            
+            <!-- Additional Fields -->
+            <div class="col-md-6">
+                <label class="form-label">Diesel (Ltr)</label>
+                <input type="number" name="diesel" step="0.1" value="0" class="form-control">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Breakdown</label>
+                <input type="text" name="breakdown" class="form-control">
+            </div>
+            <div class="col-12">
+                <label class="form-label">Remarks</label>
+                <textarea name="remarks" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-save me-2"></i>Save Logsheet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const operators = [
+    {% for emp in employees %}
+    {id: {{ emp.id }}, number: "{{ emp.empnumber }}", name: "{{ emp.name }}", rate: {{ emp.salaryperhour|default(0) }}},
+    {% endfor %}
+];
+
+function timeToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+}
+
+function calculateShift() {
+    const startTime = document.getElementById('shiftstart').value;
+    const endTime = document.getElementById('shiftend').value;
+    const lunchMinutes = parseInt(document.getElementById('lunchminutes').value) || 60;
+    
+    if (startTime && endTime) {
+        let startMin = timeToMinutes(startTime);
+        let endMin = timeToMinutes(endTime);
+        let rawTotalMin = endMin - startMin;
+        if (rawTotalMin < 0) rawTotalMin += 24 * 60;
+        const netTotalMin = rawTotalMin - lunchMinutes;
+        const hours = Math.floor(netTotalMin / 60);
+        const minutes = netTotalMin % 60;
+        document.getElementById('totalshifttime').value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+}
+
+function calcHourMeter() {
+    const start = parseFloat(document.getElementById('hourmeterstart').value) || 0;
+    const end = parseFloat(document.getElementById('hourmeterend').value) || 0;
+    document.getElementById('diffhourmeter').value = (end - start).toFixed(1);
+}
+
+document.getElementById('operatorsearch').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const resultsDiv = document.getElementById('operatorresults');
+    
+    if (searchTerm.length >= 2) {
+        const filtered = operators.filter(op => 
+            op.name.toLowerCase().includes(searchTerm) || 
+            op.number.toLowerCase().includes(searchTerm)
+        );
+        if (filtered.length > 0) {
+            resultsDiv.innerHTML = filtered.map(op => 
+                `<div class="operator-item p-2 border-bottom hover-pointer" onclick="selectOperator(${op.id}, '${op.number}', '${op.name}', ${op.rate})">
+                    <strong>${op.name}</strong> <br>
+                    <small class="text-muted">${op.number} | ₹${op.rate.toFixed(2)}/hr</small>
+                </div>`
+            ).join('');
+            resultsDiv.style.display = 'block';
+        } else {
+            resultsDiv.style.display = 'none';
+        }
+    } else {
+        resultsDiv.style.display = 'none';
+    }
+});
+
+function selectOperator(id, number, name, rate) {
+    document.getElementById('empoperatorid').value = id;
+    document.getElementById('empoperatornumber').value = number;
+    document.getElementById('empoperatorname').value = name;
+    document.getElementById('emprate').value = rate;
+    
+    document.getElementById('selectedname').textContent = name;
+    document.getElementById('selectednumber').textContent = number;
+    document.getElementById('selectedrate').textContent = '₹' + rate.toFixed(2);
+    document.getElementById('selectedoperator').style.display = 'block';
+    document.getElementById('operatorresults').style.display = 'none';
+    document.getElementById('operatorsearch').value = name;
+}
+
+function clearOperatorSearch() {
+    document.getElementById('operatorsearch').value = '';
+    document.getElementById('operatorresults').style.display = 'none';
+    document.getElementById('selectedoperator').style.display = 'none';
+    document.getElementById('empoperatorid').value = '';
+    document.getElementById('empoperatornumber').value = '';
+    document.getElementById('empoperatorname').value = '';
+    document.getElementById('emprate').value = '';
+}
+</script>
+
+<style>
+.hover-pointer:hover { background-color: #e3f2fd !important; cursor: pointer; }
+.operator-item { cursor: pointer; transition: background-color 0.2s; }
+</style>
+{% endblock %}
